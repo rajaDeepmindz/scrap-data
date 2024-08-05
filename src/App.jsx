@@ -13,8 +13,8 @@ function App() {
   </div>
   <main className="h-[90%] p-3  ">
       <Routes>
-        <Route path="/" element={<TableData />} />
-        <Route path="/scrap-data" element={<ScrapData />} />
+        <Route path="/" element={<ScrapData />} />
+        {/* <Route path="/scrap-data" element={<ScrapData />} /> */}
       </Routes>
   </main>
 </div>
