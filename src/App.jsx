@@ -1,6 +1,6 @@
 import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 import "./App.css";
-import TableData from "./components/Table-data";
+// import TableData from "./components/Table-data";
 import ScrapData from "./components/Scrap-data";
 import Navbar from "./components/Navbar";
 

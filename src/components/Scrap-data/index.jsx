@@ -34,7 +34,7 @@ const ScrapData = () => {
         }
       );
       console.log(saveResponse.data);
-      alert(saveResponse.data)
+      // alert(saveResponse.data)
 
     } catch (error) {
       console.error("Error saving data:", error);
