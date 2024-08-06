@@ -6,7 +6,7 @@ import Navbar from "./components/Navbar";
 
 function App() {
   return (
-    <Router>
+    <Router basename="/scraped_data">
       <div className="flex flex-col h-screen">
   <div className="h-[10%]">
     <Navbar />
