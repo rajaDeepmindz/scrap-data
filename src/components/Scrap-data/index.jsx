@@ -12,55 +12,58 @@ const ScrapData = () => {
   const [status, setStatus] = useState({});
   const [savePayload, setSavePayload] = useState([]);
 
-  const saveApiCall = async () => {
-    console.log(savePayload);
-  
-    try {
-      const formData = new FormData();
-      // Append the payload data to the FormData object
-      savePayload.forEach(item => {
-        formData.append('data[]', JSON.stringify(item));
-        console.log(formData)
-      });
-      
-      
-      const saveResponse = await axios.post(
-        "https://inspireddashboard.pharynxai.in/scrape_data/scrapping/update",
-        formData,
-        {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
-        }
-      );
-      console.log(saveResponse.data);
-      // alert(saveResponse.data)
+ const saveApiCall = async () => {
+  console.log(savePayload);
 
-    } catch (error) {
-      console.error("Error saving data:", error);
+  try {
+    // Check if savePayload is an empty array
+    if (savePayload.length === 0) {
+      console.log("error: payload is empty");
+      return; // Exit the function if there's nothing to save
     }
-  };
-  
+
+    const payload = { data: savePayload };
+    const saveResponse = await axios.post(
+      "https://inspireddashboard.pharynxai.in/scrape_data/scrapping/update",
+      payload,
+      {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+
+    console.log(saveResponse.data);
+
+  } catch (error) {
+    console.error("Error saving data:", error);
+  }
+};
+
+
   const handleStatusChange = (itemId, statusType) => {
+    console.log("itemsDetails",itemId,statusType)
     const updatedPayload = [...savePayload];
     const existingIndex = updatedPayload.findIndex(
       (payloadItem) => payloadItem.id === itemId
     );
-    
+
     if (existingIndex >= 0) {
       updatedPayload[existingIndex] = { id: itemId, status: statusType };
     } else {
       updatedPayload.push({ id: itemId, status: statusType });
     }
-  
+
     setSavePayload(updatedPayload);
     setStatus((prevStatus) => ({
       ...prevStatus,
       [itemId]: statusType,
     }));
+
+    // Save data after updating status
     saveApiCall();
   };
-  
+
   const fetchData = async () => {
     try {
       const response = await axios.get(
@@ -75,16 +78,16 @@ const ScrapData = () => {
 
   useEffect(() => {
     fetchData();
+    saveApiCall();
   }, []);
 
   useEffect(() => {
     const lowercasedSearchTerm = searchTerm.toLowerCase();
     const newFilteredData = data.filter((item) =>
-      item.question.toLowerCase().includes(lowercasedSearchTerm) ||
-      item.answer.toLowerCase().includes(lowercasedSearchTerm) ||
-      item.updated_answer.toLowerCase().includes(lowercasedSearchTerm) ||
-      item.url.toLowerCase().includes(lowercasedSearchTerm) ||
-      item.sites_url.some((url) => url.toLowerCase().includes(lowercasedSearchTerm))
+      [item.question, item.answer, item.updated_answer, item.url, ...item.sites_url]
+        .join(" ")
+        .toLowerCase()
+        .includes(lowercasedSearchTerm)
     );
     setFilteredData(newFilteredData);
     setCurrentPage(1);
@@ -97,14 +100,14 @@ const ScrapData = () => {
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
   return (
-    <div className="bg-gradient-to-r mt-1 h-full from-blue-100 to-blue-400 rounded-lg shadow-xl p-6">
+    <div className="bg-gradient-to-r h-full from-blue-100 to-blue-400 rounded-lg shadow-xl p-4">
       <div className="container mx-auto px-4">
         <div className="flex justify-between">
           <div className="relative mb-4">
             <input
               type="text"
               placeholder="Search..."
-              value={searchTerm}
+              value={searchTerm}    
               onChange={(e) => setSearchTerm(e.target.value)}
               className="border border-purple-500 shadow-sm text-purple-500 rounded-md pl-10 pr-4 py-2 w-[300px]"
             />
@@ -129,43 +132,32 @@ const ScrapData = () => {
               />
             </svg>
           </div>
-
-          {/* <div>
-            <button
-              onClick={saveApiCall}
-              className="bg-purple-900 text-white py-2 px-4 rounded-md hover:bg-yellow-600 focus:outline-none focus:ring-2 focus:ring-green-400 font-bold"
-            >
-              Save
-            </button>
-          </div> */}
-          
         </div>
 
         <div className="overflow-x-auto rounded justify-center items-center max-h-[calc(100vh-250px)]">
-          <table className="min-w-full">
+        <table className="min-w-full">
             <thead className="bg-purple-700 border border-purple-700 text-white">
               <tr>
                 <th className="py-3 px-4 border-b text-sm md:text-base">SL_No.</th>
                 <th className="py-3 px-4 border-b text-sm md:text-base">Question</th>
                 <th className="py-3 px-4 border-b text-sm md:text-base">Answer</th>
-                {/* <th className="py-3 px-4 border-b text-sm md:text-base">Url</th> */}
                 <th className="py-3 px-4 border-b text-sm md:text-base">Site_url</th>
                 <th className="py-3 px-4 border-b text-sm md:text-base">Updated Answer</th>
                 <th className="py-3 px-4 border-b text-sm md:text-base">Status</th>
               </tr>
             </thead>
             <tbody>
-              {currentItems.map((item, index) => (
+              {currentItems.map((item) => (
                 <tr
-                key={item.id}
-                className={`odd:bg-gray-100 even:bg-gray-200 hover:bg-blue-100 text-center transition duration-200 ${
-                  status[item.id] === "right"
-                    ? "bg-green-100"
-                    : status[item.id] === "wrong"
-                    ? "bg-red-100"
-                    : ""
-                }`}
-              >
+                  key={item.id}
+                  className={`odd:bg-gray-100 even:bg-gray-200 hover:bg-blue-100 text-center transition duration-200 ${
+                    status[item.id] === "right"
+                      ? "bg-green-100"
+                      : status[item.id] === "wrong"
+                      ? "bg-red-100"
+                      : ""
+                  }`}
+                >
                   <td className="py-3 px-4 border-b text-center text-sm md:text-base">
                     {item.id}
                   </td>
@@ -175,16 +167,6 @@ const ScrapData = () => {
                   <td className="py-3 px-4 border-b text-sm md:text-base">
                     <TruncatedContent content={item.answer} searchTerm={searchTerm} />
                   </td>
-                  {/* <td className="py-3 px-4 border-b text-sm md:text-base">
-                    <a
-                      href={item.url}
-                      className="text-blue-900 font-semibold hover:underline hover:text-red-500"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      {item.url}
-                    </a>
-                  </td> */}
                   <td className="py-3 px-4 border-b text-sm md:text-base">
                     {item.sites_url.map((url, index) => (
                       <div key={index}>
@@ -194,7 +176,7 @@ const ScrapData = () => {
                           target="_blank"
                           rel="noopener noreferrer"
                         >
-                          {url}
+                          <TruncatedContent content={url} searchTerm={searchTerm} />
                         </a>
                       </div>
                     ))}
@@ -203,44 +185,43 @@ const ScrapData = () => {
                     <TruncatedContent content={item.updated_answer} searchTerm={searchTerm} />
                   </td>
                   <td className="py-3 px-4 border-b flex justify-center items-center text-sm md:text-base">
-        {item.updated_answer && (
-          <div className="flex space-x-5">
-            <button
-            
-              onClick={() => handleStatusChange(item.id, "yes")}
-              className={`bg-white py-1 px-3 rounded-full hover:bg-gray-200 focus:outline-none focus:ring-2 ${
-                status[item.staus] === "yes"
-                  ? "border-green-400"
-                  : "border-transparent"
-              }`}
-            >
-              <img src={right} alt="" className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => handleStatusChange(item.id, "no")}
-              className={`bg-white py-1 px-3 rounded-full hover:bg-gray-200 focus:outline-none focus:ring-2 ${
-                status[item.status] === "no"
-                  ? "border-red-400"
-                  : "border-transparent"
-              }`}
-            >
-              <img src={wrong} alt="" className="w-4 h-4" />
-            </button>
-          </div>
-        )}
-      </td>
+                    {item.updated_answer && (
+                      <div className="flex space-x-5">
+                        <button
+                          onClick={() => handleStatusChange(item.id, "yes")}
+                          className={`bg-white py-1 px-3 rounded-full hover:bg-gray-200 focus:outline-none focus:ring-2 ${
+                            status[item.id] === "right"
+                              ? "border-green-400"
+                              : "border-transparent"
+                          }`}
+                        >
+                          <img src={right} alt="right" className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleStatusChange(item.id, "no")}
+                          className={`bg-white py-1 px-3 rounded-full hover:bg-gray-200 focus:outline-none focus:ring-2 ${
+                            status[item.id] === "wrong"
+                              ? "border-red-400"
+                              : "border-transparent"
+                          }`}
+                        >
+                          <img src={wrong} alt="wrong" className="w-4 h-4" />
+                        </button>
+                      </div>
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
-          <div className="fixed bottom-5 justify-center items-center">
-            <Pagination
-              itemsPerPage={itemsPerPage}
-              totalItems={filteredData.length}
-              paginate={paginate}
-              currentPage={currentPage}
-            />
-          </div>
+          <div className="fixed bottom-5 left-1/2 transform -translate-x-1/2">
+  <Pagination
+    itemsPerPage={itemsPerPage}
+    totalItems={filteredData.length}
+    paginate={paginate}
+    currentPage={currentPage}
+  />
+</div>
         </div>
       </div>
     </div>
@@ -300,30 +281,82 @@ const highlightSearchTerm = (text, searchTerm) => {
     )
   );
 };
-
 const Pagination = ({ itemsPerPage, totalItems, paginate, currentPage }) => {
   const pageNumbers = [];
-  for (let i = 1; i <= Math.ceil(totalItems / itemsPerPage); i++) {
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
+
+  for (let i = 1; i <= totalPages; i++) {
     pageNumbers.push(i);
   }
 
+  const handleFirst = () => paginate(1);
+  const handlePrevious = () => paginate(Math.max(currentPage - 1, 1));
+  const handleNext = () => paginate(Math.min(currentPage + 1, totalPages));
+  const handleLast = () => paginate(totalPages);
+
   return (
-    <nav>
-      <ul className="pagination flex space-x-4">
-        {pageNumbers.map((number) => (
-          <li key={number} className="page-item">
-            <button
-              onClick={() => paginate(number)}
-              className={`page-link ${
-                number === currentPage
-                  ? "bg-purple-700 text-white"
-                  : "bg-white text-purple-700"
-              } py-2 px-4 rounded-md hover:bg-purple-900 hover:text-white focus:outline-none focus:ring-2`}
-            >
-              {number}
-            </button>
-          </li>
-        ))}
+    <nav className="flex justify-center items-center">
+      <ul className="pagination flex items-center space-x-2">
+        {/* First Page */}
+        <li>
+          <button
+            onClick={handleFirst}
+            disabled={currentPage === 1}
+            className={`page-link ${
+              currentPage === 1 ? "bg-gray-300 text-gray-600 cursor-not-allowed" : "bg-white text-purple-700"
+            } py-2 px-4 rounded-md hover:bg-purple-700 hover:text-white focus:outline-none focus:ring-2`}
+          >
+            &laquo;&laquo;
+          </button>
+        </li>
+
+        {/* Previous Page */}
+        <li>
+          <button
+            onClick={handlePrevious}
+            disabled={currentPage === 1}
+            className={`page-link ${
+              currentPage === 1 ? "bg-gray-300 text-gray-600 cursor-not-allowed" : "bg-white text-purple-700"
+            } py-2 px-4 rounded-md hover:bg-purple-700 hover:text-white focus:outline-none focus:ring-2`}
+          >
+            &laquo;
+          </button>
+        </li>
+
+        {/* Current Page */}
+        <li>
+          <button
+            className="page-link bg-purple-700 text-white py-2 px-4 rounded-md focus:outline-none focus:ring-2"
+          >
+            {currentPage}
+          </button>
+        </li>
+
+        {/* Next Page */}
+        <li>
+          <button
+            onClick={handleNext}
+            disabled={currentPage === totalPages}
+            className={`page-link ${
+              currentPage === totalPages ? "bg-gray-300 text-gray-600 cursor-not-allowed" : "bg-white text-purple-700"
+            } py-2 px-4 rounded-md hover:bg-purple-700 hover:text-white focus:outline-none focus:ring-2`}
+          >
+            &raquo;
+          </button>
+        </li>
+
+        {/* Last Page */}
+        <li>
+          <button
+            onClick={handleLast}
+            disabled={currentPage === totalPages}
+            className={`page-link ${
+              currentPage === totalPages ? "bg-gray-300 text-gray-600 cursor-not-allowed" : "bg-white text-purple-700"
+            } py-2 px-4 rounded-md hover:bg-purple-700 hover:text-white focus:outline-none focus:ring-2`}
+          >
+            &raquo;&raquo;
+          </button>
+        </li>
       </ul>
     </nav>
   );
